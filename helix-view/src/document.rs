@@ -15,10 +15,11 @@ use std::collections::HashMap;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Mode {
-    Normal,
-    Space,
-    Select,
+    Goto,
     Insert,
+    Normal,
+    Select,
+    Space,
 }
 
 pub struct Document {

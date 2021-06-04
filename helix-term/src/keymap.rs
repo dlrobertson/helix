@@ -161,7 +161,7 @@ pub fn default() -> Keymaps {
         key!('e') => commands::move_next_word_end,
 
         key!('v') => commands::select_mode,
-        key!('g') => commands::goto_mode,
+        key!('g') => commands::enter_goto_mode,
         key!(':') => commands::command_mode,
 
         key!('i') => commands::insert_mode,
@@ -334,12 +334,30 @@ pub fn default() -> Keymaps {
         } => commands::exit_space_mode as Command,
     );
 
+    let goto = hashmap!(
+        key!('g') => commands::goto_file_start as Command,
+        key!('e') => commands::goto_file_end as Command,
+        key!('d') => commands::goto_definition as Command,
+        key!('t') => commands::goto_type_definition as Command,
+        key!('r') => commands::goto_reference as Command,
+        key!('i') => commands::goto_implementation as Command,
+        KeyEvent {
+            code: KeyCode::Enter,
+            modifiers: KeyModifiers::NONE
+        } => commands::goto_count as Command,
+        KeyEvent {
+            code: KeyCode::Esc,
+            modifiers: KeyModifiers::NONE
+        } => commands::exit_goto_mode as Command,
+    );
+
     hashmap!(
         // as long as you cast the first item, rust is able to infer the other cases
         // TODO: select could be normal mode with some bindings merged over
         Mode::Normal => normal,
         Mode::Select => select,
         Mode::Space => space,
+        Mode::Goto => goto,
         Mode::Insert => hashmap!(
             KeyEvent {
                 code: KeyCode::Esc,

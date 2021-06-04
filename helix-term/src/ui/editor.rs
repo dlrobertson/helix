@@ -426,9 +426,10 @@ impl EditorView {
         is_focused: bool,
     ) {
         let mode = match doc.mode() {
+            Mode::Goto => "GO2",
             Mode::Insert => "INS",
-            Mode::Select => "SEL",
             Mode::Normal => "NOR",
+            Mode::Select => "SEL",
             Mode::Space => "SPC",
         };
         let text_color = if is_focused {

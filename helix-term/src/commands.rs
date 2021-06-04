@@ -256,18 +256,20 @@ pub fn move_next_word_end(cx: &mut Context) {
     doc.set_selection(view.id, selection);
 }
 
-pub fn move_file_start(cx: &mut Context) {
+pub fn goto_file_start(cx: &mut Context) {
     push_jump(cx.editor);
     let (view, doc) = cx.current();
     doc.set_selection(view.id, Selection::point(0));
+    exit_goto_mode(cx);
 }
 
-pub fn move_file_end(cx: &mut Context) {
+pub fn goto_file_end(cx: &mut Context) {
     push_jump(cx.editor);
     let (view, doc) = cx.current();
     let text = doc.text();
     let last_line = text.line_to_char(text.len_lines().saturating_sub(2));
     doc.set_selection(view.id, Selection::point(last_line));
+    exit_goto_mode(cx);
 }
 
 pub fn extend_next_word_start(cx: &mut Context) {
@@ -1242,39 +1244,29 @@ fn push_jump(editor: &mut Editor) {
     view.jumps.push(jump);
 }
 
-pub fn goto_mode(cx: &mut Context) {
-    let count = cx.count;
+pub fn enter_goto_mode(cx: &mut Context) {
+    cx.doc().mode = Mode::Goto;
 
-    if count > 1 {
-        push_jump(cx.editor);
-
-        // TODO: can't go to line 1 since we can't distinguish between g and 1g, g gets converted
-        // to 1g
-        let (view, doc) = cx.current();
-        let line_idx = std::cmp::min(count - 1, doc.text().len_lines().saturating_sub(2));
-        let pos = doc.text().line_to_char(line_idx);
-        doc.set_selection(view.id, Selection::point(pos));
-        return;
+    if cx.count > 1 {
+        goto_count(cx);
     }
+}
 
-    cx.on_next_key(move |cx, event| {
-        if let KeyEvent {
-            code: KeyCode::Char(ch),
-            ..
-        } = event
-        {
-            // TODO: temporarily show GOTO in the mode list
-            match ch {
-                'g' => move_file_start(cx),
-                'e' => move_file_end(cx),
-                'd' => goto_definition(cx),
-                't' => goto_type_definition(cx),
-                'r' => goto_reference(cx),
-                'i' => goto_implementation(cx),
-                _ => (),
-            }
-        }
-    })
+pub fn exit_goto_mode(cx: &mut Context) {
+    cx.doc().mode = Mode::Normal;
+}
+
+pub fn goto_count(cx: &mut Context) {
+    let count = cx.count;
+    push_jump(cx.editor);
+
+    // TODO: can't go to line 1 since we can't distinguish between g and 1g, g gets converted
+    // to 1g
+    let (view, doc) = cx.current();
+    let line_idx = std::cmp::min(count - 1, doc.text().len_lines().saturating_sub(2));
+    let pos = doc.text().line_to_char(line_idx);
+    doc.set_selection(view.id, Selection::point(pos));
+    exit_goto_mode(cx);
 }
 
 pub fn select_mode(cx: &mut Context) {
@@ -1310,6 +1302,7 @@ fn _goto(
         let new_pos = lsp_pos_to_pos(doc.text(), definition_pos, offset_encoding);
         doc.set_selection(view.id, Selection::point(new_pos));
         align_view(doc, view, Align::Center);
+        doc.mode = Mode::Normal;
     }
 
     match locations.as_slice() {
